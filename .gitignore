@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+
+# Node
+node_modules/
+dist/
+
+# Testing
+.pytest_cache/
+.coverage
+
+# Logs
+*.log
