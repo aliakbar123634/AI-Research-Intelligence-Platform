@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from pydantic import BaseModel , Field
+from pydantic import BaseModel , Field , ConfigDict
 from fastapi import APIRouter
 from  .database import get_db_connection
 from enum import Enum
@@ -7,8 +7,10 @@ from fastapi import HTTPException
 from fastapi import Query
 from .auth import get_current_user
 from fastapi import Depends
-
-
+from typing import Any
+import json
+from datetime import datetime, timezone
+from app.services.research_service import *
 
 router=APIRouter()
 
@@ -24,7 +26,16 @@ async def research(request:ResearchRequest , current_user:str=Depends(get_curren
     INSERT_QUERY =text("""
         INSERT INTO researches (question, status , user_id)
         VALUES (:question, :status , :user_id)
-        RETURNING id, user_id, question, status, created_at
+            RETURNING
+            id,
+            user_id,
+            question,
+            status,
+            result,
+            error_message,
+            created_at,
+            updated_at,
+            completed_at
     """)
     try:   
         with get_db_connection() as connection:
@@ -55,7 +66,16 @@ def get_researches(
     """)
 
     data_query = text("""
-        SELECT id, question, status, user_id, created_at
+        SELECT
+            id,
+            user_id,
+            question,
+            status,
+            result,
+            error_message,
+            created_at,
+            updated_at,
+            completed_at
         FROM researches
         WHERE user_id = :user_id
         ORDER BY id DESC
@@ -90,33 +110,20 @@ def get_researches(
                 "researches": researches
             }
 
-    except Exception:
+    except Exception as e:
+        print(f"Error fetching researches: {e}")
         raise HTTPException(
             status_code=500,
             detail="Unable to fetch research records"
         )
 
-
-
 @router.get("/researches/{research_id}")
 def get_research(research_id:int , current_user: dict = Depends(get_current_user)):
-    SELECT_QUERY=text("""
-    SELECT * from researches 
-    WHERE id=:research_id
-        AND user_id = :user_id
-    """)    
-    try:
-        with get_db_connection() as connection:
-            result=connection.execute(SELECT_QUERY , {"research_id":research_id , "user_id": current_user["id"]})
-            research=result.mappings().one_or_none()
-            if research:
-                return dict(research)
-            else:
-                return {"message " : f"Research with id {research_id} not found "}
-    except Exception as e:
-        print(f"Error occured: {e}")
-        return {"message ": "An error occurred while fetching the research record"}        
-
+    return get_research_by_id(
+        research_id=research_id,
+        user_id=current_user["id"]        
+    )
+      
 class ResearchStatus(str, Enum):
     pending = "pending"
     in_progress = "in_progress"
@@ -127,25 +134,18 @@ class ResearchUpdateRequest(BaseModel):
     status: ResearchStatus = Field(
         description="Updated research status"
     )
+    result: dict[str, Any] | None = None
+    error_message: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
 @router.patch("/researches/{research_id}")
 async def update_research(research_id:int, request:ResearchUpdateRequest , current_user: dict = Depends(get_current_user)):
-    
-    UPDATE_QUERY=text("""
-    UPDATE researches
-    SET status=:status
-    WHERE id=:research_id
-    AND user_id = :user_id
-    """)
-    try:
-        with get_db_connection() as connection:
-            result=connection.execute(UPDATE_QUERY, {"status":request.status.value , "research_id":research_id , "user_id": current_user["id"],})
-            if result.rowcount==0:
-                return {"message":f"Research with id {research_id} not found"}
-            return {"message":f"Research with id {research_id} updated successfully"}
-    except Exception as e:
-        print(f"Error occured: {e}")
-        return {"message": "An error occurred while updating the research record"}
-
+    return update_research_status(
+        research_id=research_id,
+        user_id=current_user["id"],
+        status=request.status.value
+    )    
+                           
 @router.delete("/researches/{research_id}")
 def delete_research(research_id:int , current_user: dict = Depends(get_current_user)):
     DELETE_QUERY=text("""
