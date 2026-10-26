@@ -81,3 +81,36 @@ def update_research_status(
             status_code=500,
             detail="Failed to update research status"
         ) 
+
+def save_research_sources(
+    research_id: int,
+    sources: list[dict]
+):
+    query=text("""
+    INSERT INTO research_sources
+        (research_id, title, url, content, score)
+    VALUES
+        (:research_id, :title, :url, :content, :score)     
+    """) 
+    try:
+        with get_db_connection() as connection:
+            for source in sources:
+                print("PROCESSING SOURCE:", source)
+
+                if not source.get("url"):
+                    print("SKIPPED: URL missing")
+                    continue
+                connection.execute(query,{
+                    "research_id": research_id,
+                    "title": source.get("title"),
+                    "url": source["url"],
+                    "content": source.get("content"),
+                    "score": source.get("score")
+                })    
+        return len(sources)
+    except Exception as e:
+        print(f"Error saving research sources: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to save research sources"
+        )                        

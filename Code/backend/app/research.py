@@ -11,6 +11,8 @@ from typing import Any
 import json
 from datetime import datetime, timezone
 from app.services.research_service import *
+from app.services.web_search_service import *
+# from app.services.research_service import save_research_sources
 
 router=APIRouter()
 
@@ -43,12 +45,27 @@ async def research(request:ResearchRequest , current_user:str=Depends(get_curren
             INSERT_QUERY,
             {"question": request.query, "status": "pending" ,"user_id": current_user["id"]}
         )
-
-            research=result.mappings().one()
-            return  dict(research)
-    except Exception as e:
-        print(f"Error occurred: {e}")
-        return {"message": "An error occurred while processing the research request"}
+            research_record = dict(result.mappings().one())
+            # research=result.mappings().one()
+            # return  dict(research)
+    # except Exception as e:
+    #     print(f"Error occurred: {e}")
+    #     return {"message": "An error occurred while processing the research request"}
+    # try:
+        search_results=search_web(request.query)
+        print("SEARCH RESULTS:", search_results)
+        print("TOTAL SOURCES:", len(search_results))
+        saved_count =save_research_sources(
+            research_id=research_record["id"],
+            sources=search_results
+        )
+        print("SAVED SOURCES:", saved_count)
+    except HTTPException:
+        raise
+    return {
+        "research": research_record,
+        "search_results": search_results
+    }        
 
 
 @router.get("/researches")

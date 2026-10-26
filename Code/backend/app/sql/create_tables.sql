@@ -45,3 +45,15 @@ CREATE TABLE IF NOT EXISTS users(
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     );   
+
+CREATE TABLE IF NOT EXISTS research_sources (
+    id BIGSERIAL PRIMARY KEY,
+    research_id BIGINT NOT NULL REFERENCES researches(id) ON DELETE CASCADE,
+    title TEXT,
+    url TEXT NOT NULL,
+    content TEXT,
+    score DOUBLE PRECISION,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+CREATE INDEX IF NOT EXISTS idx_research_sources_research_id
+ON research_sources(research_id);
