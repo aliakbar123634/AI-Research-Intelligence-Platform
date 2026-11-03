@@ -57,3 +57,17 @@ CREATE TABLE IF NOT EXISTS research_sources (
     );
 CREATE INDEX IF NOT EXISTS idx_research_sources_research_id
 ON research_sources(research_id);
+
+
+CREATE TABLE IF NOT EXISTS research_documents(
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    research_id BIGINT NOT NULL REFERENCES researches(id) ON DELETE CASCADE,
+    userId BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    original_filename VARCHAR(255) NOT NULL,
+    stored_filename VARCHAR(255) NOT NULL UNIQUE,
+    file_path TEXT NOT NULL,
+    file_type VARCHAR(50) NOT NULL,
+    file_size BIGINT NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'uploaded',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

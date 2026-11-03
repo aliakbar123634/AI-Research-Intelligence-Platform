@@ -35,14 +35,17 @@ def get_research_by_id(research_id: int, user_id: int):
 
 
 
+
 def update_research_status(
     research_id: int,
     user_id: int,
-    status: str
+    status: str,
+    error_message: str | None = None
 ):
     query = text("""
     UPDATE researches
     SET status = CAST(:status AS VARCHAR),
+        error_message = :error_message,
         updated_at = NOW(),
         completed_at = CASE
             WHEN CAST(:status AS VARCHAR) IN ('completed', 'failed')
@@ -51,7 +54,7 @@ def update_research_status(
         END
     WHERE id = :research_id
       AND user_id = :user_id
-    RETURNING id, status, updated_at, completed_at
+    RETURNING id, status, error_message, updated_at, completed_at
 """)
 
     try:
@@ -59,7 +62,8 @@ def update_research_status(
             result = connection.execute(query, {
                 "research_id": research_id,
                 "user_id": user_id,
-                "status": status
+                "status": status,
+                "error_message": error_message
             })
 
             research = result.mappings().one_or_none()
