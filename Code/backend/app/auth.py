@@ -160,7 +160,7 @@ def get_current_user(
     except (InvalidTokenError, ValueError, TypeError, KeyError):
         raise credentials_error 
     query=text("""
-    SELECT *
+    SELECT id, email, is_active, created_at
     FROM users 
     WHERE id = :user_id
     """)
@@ -186,5 +186,5 @@ def get_me(current_user:dict=Depends(get_current_user)):
 
 
 
-#              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzkyNzc1ODk1LCJleHAiOjE3OTI3Nzc2OTV9.p3kCu90DKGuw5MLnHJIkJEXZT3h0GhfJMlvwXZ28jbA
+
          

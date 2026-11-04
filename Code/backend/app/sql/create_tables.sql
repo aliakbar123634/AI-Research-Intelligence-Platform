@@ -71,3 +71,16 @@ CREATE TABLE IF NOT EXISTS research_documents(
     status VARCHAR(30) NOT NULL DEFAULT 'uploaded',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS document_chunks(
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    document_id BIGINT NOT NULL REFERENCES research_documents(id) ON DELETE CASCADE,
+    chunk_index INTEGER NOT NULL,
+    page_number INTEGER,
+    content TEXT NOT NULL,
+    embedding VECTOR(384),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT unique_document_chunk
+        UNIQUE (document_id, chunk_index)    
+);

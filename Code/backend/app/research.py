@@ -14,6 +14,9 @@ from app.services.research_service import *
 from app.services.web_search_service import *
 from app.services.llm_workflow import run_llm_workflow
 from app.services.document_service import *
+from app.services.document_processing_service import process_document
+from pathlib import Path
+
 
 router=APIRouter()
 
@@ -321,8 +324,19 @@ async def upload_research_document(
                     **document
                 }
             )
+            saved_document = dict( result.mappings().one())
 
-            saved_document = dict(result.mappings().one())
+        print("DOCUMENT SAVED:", saved_document["id"])
+
+    # STEP 2: Process document
+        print("STARTING DOCUMENT PROCESSING")
+
+        processing_result = process_document(
+            document_id=saved_document["id"],
+            file_path=Path(document["file_path"])
+        )
+
+        print("PROCESSING RESULT:", processing_result)  
 
         return {
             "message": "Document uploaded successfully",
@@ -331,7 +345,6 @@ async def upload_research_document(
 
     except Exception as e:
         # Remove stored file if database insertion fails
-        from pathlib import Path
 
         Path(document["file_path"]).unlink(missing_ok=True)
 
@@ -357,7 +370,7 @@ async def list_research_documents(
             detail="Research not found"
         )
     query=text("""
-        SELECT *
+        SELECT id, research_id, original_filename, file_type, file_size, status, created_at
         FROM research_documents
         WHERE research_id=:research_id
         AND user_id=:user_id
@@ -379,7 +392,7 @@ async def list_research_documents(
         } 
     except Exception as e:
         print(f"Error fetching documnents: {e}")
-        return HTTPException(
+        raise HTTPException(
             status_code=500,
             detail="Unable to fetch research documents"
         )       
@@ -469,7 +482,6 @@ async def delete_research_document(
         Path(deleted_document["file_path"]).unlink(missing_ok=True)
         return {
             "message":"Document deleted successfully",
-            "file_path":deleted_document["file_path"]
         }
     except Exception as e:
         print(f"Error deleting document: {e}")
