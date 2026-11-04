@@ -4,6 +4,7 @@ from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, START, END
 from app.services.web_search_service import search_web
 from dotenv import load_dotenv
+from app.tools.web_search_tool import web_search
 
 load_dotenv()
 
@@ -21,11 +22,7 @@ llm =ChatGroq(
 def generate_answer(state:ResearchState):
     source_context=""
     for i, source in enumerate(state["sources"], start=1):
-        source_text=(
-            # f"Source {i}:\n"
-            # f"Title: {source.get('title', 'Unknown')}\n"
-            # f"URL: {source.get('url', '')}\n"
-            # f"Content: {source.get('content', '')}"  
+        source_text=( 
             f"""
                 <source id="{i}">
                 <title>{source.get('title', 'Unknown')}</title>
@@ -97,7 +94,8 @@ builder.add_edge("generate_answer" , END)
 research_graph=builder.compile()
 
 def run_llm_workflow(question:str) -> dict:
-    sources=search_web(question)
+    # sources=search_web(question)
+    sources=web_search(question)
     result=research_graph.invoke({
         "question": question,
         "sources": sources,

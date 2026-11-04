@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from .health import router as health_router
 from .research import router as research_router
+from .rag import router as rag_outer
 from .auth import router as auth_router
 
 app=FastAPI(
@@ -19,6 +20,7 @@ async def root():
 app.include_router(health_router)
 app.include_router(research_router)
 app.include_router(auth_router)
+app.include_router(rag_outer)
 
 
 #    cd Code

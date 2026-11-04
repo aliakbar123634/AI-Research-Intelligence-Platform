@@ -31,3 +31,41 @@ def store_document_chunks(document_id:int , chunks:list[dict]):
                     "embedding": str(chunk["embedding"])                    
                 }
             )
+
+def search_similar_chunks(document_id: int, query_embedding: list,limit: int = 5):
+    if not query_embedding:
+        raise ValueError("Query embedding is required")
+    if limit <=0:
+        raise ValueError("Limit must be greater than 0")
+
+
+    query = text("""
+        SELECT
+            id,
+            document_id,
+            chunk_index,
+            page_number,
+            content,
+            1 - (
+                embedding <=> CAST(:query_embedding AS vector)
+            ) AS similarity
+
+        FROM document_chunks
+
+        WHERE document_id = :document_id
+
+        ORDER BY embedding <=> CAST(:query_embedding AS vector)
+
+        LIMIT :limit
+    """)
+    with get_db_connection() as connection:
+        result=connection.execute(query,{
+            "document_id": document_id,
+            "query_embedding": str(query_embedding),
+            "limit": limit
+        })
+        chunks=result.mappings().all()
+    response=[]
+    for chunk in chunks:
+        response.append(dict(chunk))    
+    return response    

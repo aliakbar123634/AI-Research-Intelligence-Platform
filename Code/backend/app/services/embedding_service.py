@@ -4,12 +4,12 @@ from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
-
+# Load model only once
+embedding_model = SentenceTransformer(MODEL_NAME)
 def generate_embedding(chunks:list[dict]):
 
 
-    # Load model only once
-    embedding_model = SentenceTransformer(MODEL_NAME)
+
     try:
         texts=[]
         for chunk in chunks:
@@ -29,3 +29,19 @@ def generate_embedding(chunks:list[dict]):
     except Exception as e:
         print(f"Embedding generation error: {e}")
         raise HTTPException(status_code=500, detail="Error generating embeddings")
+
+def generate_query_embedding(query:str):
+    try:
+        if not query or not query.strip():
+            raise ValueError("Query cannot be empty")
+        embedding=embedding_model.encode(
+            query.strip(),
+            normalize_embeddings=True
+        )    
+        return embedding.tolist()
+    except Exception as e:
+        print(f"Query embedding generation error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error generating query embedding"
+        )        
